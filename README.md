@@ -47,7 +47,7 @@ Rain_Informer_Mailer/
 ## 1️⃣ Run the Application
 1. `python app.py`  
 2. Open your browser and navigate to http://127.0.0.1:5000/  
-   Or visit the deployed app at https://rain-informer-mailer.onrender.com/
+   Or visit the deployed app at https://stormsignal-eight.vercel.app/
 
 ## 🔥 Usage
 Enter your city name to check the weather.  
