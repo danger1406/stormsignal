@@ -4,7 +4,7 @@ A simple web application built with Flask that sends an email notification if it
 
 ---
 
-🌐 **Live Demo:** https://rain-informer-mailer.onrender.com/
+🌐 **Live Demo:** [https://stormsignal-eight.vercel.app/](https://stormsignal-eight.vercel.app/)
 
 ---
 
