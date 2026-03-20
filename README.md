@@ -1,75 +1,134 @@
-# ☁️ Rain Informer Mailer 🌧️
+# ☁️ Rain Informer Mailer (WeatherWatch) 🌧️
 
-A simple web application built with Flask that sends an email notification if it’s going to rain on a given day. The app pulls weather data from an external API and alerts users to stay prepared for rainy conditions.
-
----
-
-🌐 **Live Demo:** [https://stormsignal-eight.vercel.app/](https://stormsignal-eight.vercel.app/)
+A full-stack web application built with **Flask** that fetches real-time weather forecasts and sends email notifications if rain is expected at a given location. Users can look up weather by city name, latitude/longitude coordinates, or by clicking on an interactive map.
 
 ---
 
 ## 🚀 Features
-- 🌦️ Fetches real-time weather data using an API.
-- 📩 Sends email notifications if rain is expected.
-- 🔒 Secure API integration for fetching weather updates.
-- 🎨 Simple and user-friendly interface.
-- 📡 Lightweight and efficient backend using Flask.
+
+- 🌦️ Real-time weather data via [Open-Meteo API](https://open-meteo.com/)
+- 📩 Automatic email alerts with forecast table & graph if rain is expected
+- 🗺️ Interactive Leaflet map — click any location to get weather
+- 📊 24-hour forecast chart (Chart.js) with temperature & rain
+- 🌙 Dark-mode toggle
+- ✅ Client-side form validation (jQuery)
+- 📱 Fully responsive (Bootstrap 5)
 
 ---
 
-## 🛠️ Tech Stack
-- **Backend:** Flask (Python)
-- **Frontend:** HTML, CSS, JS
-- **API:** OpenWeatherMap (or any weather API of your choice)
-- **Email Service:** SMTP for sending notifications
+## 🛠️ Technologies Used
+
+| Layer      | Technology                                                  |
+| ---------- | ----------------------------------------------------------- |
+| Backend    | Flask (Python), Jinja2 templating                           |
+| Frontend   | HTML5, Bootstrap 5, minimal custom CSS                      |
+| JavaScript | jQuery 3.x, Chart.js, Leaflet.js                            |
+| APIs       | Open-Meteo (weather), API Ninjas (geocoding), LocationIQ    |
+| Email      | SMTP (Gmail) with HTML email + graph attachment              |
+| Deployment | Gunicorn (Procfile)                                         |
 
 ---
 
 ## 📂 Project Structure
 
+```
 Rain_Informer_Mailer/
-├── static/                     # Contains CSS, JS, and other static files
-
-├── templates/                  # HTML templates for rendering pages
-
-├── app.py                      # Main Flask application
-
+├── static/
+│   ├── css/
+│   │   └── style.css           # Custom styles (minimal overrides)
+│   ├── js/
+│   │   └── main.js             # jQuery logic, validation, map, charts
+│   └── images/
+│       ├── img.png             # Favicon
+│       ├── map.png
+│       ├── location.png
+│       ├── cityscape.png
+│       ├── architecture-and-city.png
+│       └── clock.png
+├── templates/
+│   ├── base.html               # Base layout (Bootstrap, jQuery, nav, footer)
+│   ├── index.html              # Home page with input forms
+│   └── success.html            # Weather results / confirmation
+├── app.py                      # Flask main application
 ├── requirements.txt            # Python dependencies
+├── Procfile                    # Deployment configuration
+├── .gitignore
+└── README.md
+```
 
-├── Procfile                   # Render deployment configuration
+---
 
-├── .gitignore                 # Git ignore file
+## ⚙️ Setup Instructions
 
-└── README.md                  # Project documentation
+### 1. Clone the repository
 
+```bash
+git clone https://github.com/saimani1232/Rain_Informer_Mailer.git
+cd Rain_Informer_Mailer
+```
 
+### 2. Create a virtual environment (optional but recommended)
 
-## 1️⃣ Run the Application
-1. `python app.py`  
-2. Open your browser and navigate to http://127.0.0.1:5000/  
-   Or visit the deployed app at https://stormsignal-eight.vercel.app/
+```bash
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+```
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Set environment variables
+
+Create a `.env` file or set these in your shell:
+
+```
+MY_EMAIL=your_gmail@gmail.com
+MY_PASSWORD=your_app_password
+GEO_API_KEY=your_api_ninjas_key
+LOC_API_KEY=your_locationiq_key
+SECRET_KEY=any-random-string
+```
+
+### 5. Run the application
+
+```bash
+python app.py
+```
+
+Open your browser and navigate to **http://127.0.0.1:5000/**
+
+---
 
 ## 🔥 Usage
-Enter your city name to check the weather.  
-If rain is detected, an email notification will be sent to the configured address.  
-Stay prepared for rainy days! ☔
+
+1. **Home Page (`/`)** — Choose input method: coordinates, city name, or map click.
+2. **Submit (`/submit`)** — The app fetches weather data and sends an email alert if rain is expected.
+3. **Results (`/success`)** — View current conditions, 24-hour chart, and hourly breakdown.
+
+---
 
 ## 📧 Email Notification Preview
-**Subject:** 🌧️ Rain Alert for Today!  
-**Body:** It looks like it's going to rain today. Don't forget to carry an umbrella! ☔
 
-## 🎯 To-Do / Future Enhancements
-✅ Add user authentication for personalized notifications.  
-✅ Enable scheduling of daily weather alerts.  
-✅ Implement a database to store user preferences.
+**Subject:** 🌧️ Weather Alert: Updated Forecast for Your Location!
+**Body includes:** Weather summary, 24-hour forecast table, and temperature/rain graph attachment.
+
+---
 
 ## 🤝 Contributing
-Pull requests are welcome! For major changes, please open an issue first to discuss what you’d like to change.
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you'd like to change.
+
+---
 
 ## 📬 Contact
-If you have any questions or suggestions, feel free to reach out:
 
-📧 Email: macherlasaimani@gmail.com  
-🐙 GitHub: saimani1232
+📧 Email: macherlasaimani@gmail.com
+🐙 GitHub: [saimani1232](https://github.com/saimani1232)
 
-Made with ❤️ using Flask. Stay dry and stay safe! 🌧️☂️
+---
+
+Made with ❤️ using Flask & Bootstrap. Stay dry and stay safe! 🌧️☂️

@@ -1,1046 +1,138 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/static/button.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="icon" href="/static/img.png">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% extends "base.html" %}
 
-  <title>WeatherWatch: Advanced Rain Alert</title>
-   <style>
-     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+{% block title %}WeatherWatch – Check Weather & Rain Alerts{% endblock %}
 
-     * {
-       box-sizing: border-box;
-       margin: 0;
-       padding: 0;
-     }
-
-     body {
-      font-family: 'Poppins', Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: linear-gradient(to right, #ffcc33 40%, #0099ff 70%, #666666);
-      min-height: 100vh;
-      background-size: 200% 200%;
-      animation: breathe 10s ease infinite;
-      padding: 20px;
-     }
-     
-     
-     @media (min-width: 768px) {
-       .header-container {
-         flex-direction: row;
-         justify-content: space-between;
-       }
-       
-       .toggle-container {
-         position: absolute;
-         right: 20px;
-         top: 20px;
-       }
-     }
-
-     .first {
-      width: 100%;
-      max-width: 400px;
-      height: auto;
-      padding: 1rem;
-      margin-bottom: 2rem;
-     }
-
-     /* Define the animated gradient background */
-     body.light-mode {
-       background-image: linear-gradient(to right, #ffcc33 40%, #0099ff 70%, #666666);
-     }
-     body.dark-mode {
-       background-image: linear-gradient(to left, #1d4350, #a43931);
-       color: #f0f0f0;
-     }
-     
-     body.dark-mode .block,
-     body.dark-mode .forecast-container,
-     body.dark-mode .weather-widget {
-       background-color: rgba(30, 30, 30, 0.9);
-       color: #f0f0f0;
-     }
-     
-     body.dark-mode .inner_text,
-     body.dark-mode .main_text {
-       color: #f0f0f0;
-     }
-     
-     body.dark-mode .hour-card {
-       background: linear-gradient(145deg, #2a2a2a, #333333);
-       color: #f0f0f0;
-     }
-     
-     body.dark-mode .hour-temp {
-       color: #ff8080;
-     }
-     
-     body.dark-mode .hour-rain {
-       color: #66b3ff;
-     }
-     
-     body.dark-mode input {
-       background-color: #333;
-       color: #f0f0f0;
-       border-color: #555;
-     }
-     
-     body.dark-mode label {
-       color: #f0f0f0;
-     }
-     /* Define the breathing animation */
-     @keyframes breathe {
-       0% {
-         background-position: 0% 50%;
-       }
-       50% {
-         background-position: 100% 50%;
-       }
-       100% {
-         background-position: 0% 50%;
-       }
-     }
-
-     .main_text {
-       color: #3c096b;
-       display: flex;
-       font-weight: bold;
-       font-size: clamp(1.5rem, 4vw, 2rem);
-       flex-direction: column;
-       justify-content: center;
-       align-items: center;
-       margin-top: 10px;
-       text-align: center;
-       width: 100%;
-     }
-
-     .inner_text {
-       margin-top: 0.5rem;
-       color: rgb(46, 44, 44);
-       font-size: clamp(1rem, 3vw, 1.4rem);
-       text-align: center;
-     }
-
-     .container {
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       gap: 30px;
-       width: 100%;
-       max-width: 1200px;
-       margin-bottom: 20px;
-     }
-
-     @media (min-width: 992px) {
-       .container {
-         flex-direction: row;
-         flex-wrap: wrap;
-         justify-content: center;
-       }
-     }
-
-     .block {
-       background-color: white;
-       display: flex;
-       flex-direction: column;
-       justify-content: flex-start;
-       align-items: center;
-       padding: 20px;
-       border-radius: 10px;
-       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-       width: 100%;
-       max-width: 350px;
-       height: auto;
-       min-height: 350px;
-       position: relative;
-       margin: 0 auto;
-     }
-
-     .block form {
-       width: 100%;
-       display: flex;
-       flex-direction: column;
-     }
-
-     h3 {
-       text-align: center;
-       margin-bottom: 15px;
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       flex-wrap: wrap;
-       gap: 5px;
-     }
-
-     input {
-       margin-bottom: 15px;
-       padding: 10px;
-       width: 100%;
-       border: 1px solid #ccc;
-       border-radius: 5px;
-     }
-
-     label {
-       margin-bottom: 5px;
-       font-weight: 500;
-     }
-
-     .glow-on-hover1, .glow-on-hover2 {
-       width: 200px;
-       height: 50px;
-       font-size: 1rem;
-       border: none;
-       outline: none;
-       color: #fff;
-       background: #111;
-       cursor: pointer;
-       position: relative;
-       margin: 20px auto 0;
-       z-index: 0;
-       border-radius: 10px;
-     }
-
-     .glow-on-hover1:before, .glow-on-hover2:before {
-       content: '';
-       background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
-       position: absolute;
-       top: -2px;
-       left: -2px;
-       background-size: 400%;
-       z-index: -1;
-       filter: blur(5px);
-       width: calc(100% + 4px);
-       height: calc(100% + 4px);
-       animation: glowing 20s linear infinite;
-       opacity: 0;
-       transition: opacity .3s ease-in-out;
-       border-radius: 10px;
-     }
-
-     .glow-on-hover1:active, .glow-on-hover2:active {
-       color: #000;
-     }
-
-     .glow-on-hover1:active:after, .glow-on-hover2:active:after {
-       background: transparent;
-     }
-
-     .glow-on-hover1:hover:before, .glow-on-hover2:hover:before {
-       opacity: 1;
-     }
-
-     .glow-on-hover1:after, .glow-on-hover2:after {
-       z-index: -1;
-       content: '';
-       position: absolute;
-       width: 100%;
-       height: 100%;
-       background: var(--glow-background, black);
-       left: 0;
-       top: 0;
-       border-radius: 10px;
-     }
-
-     @keyframes glowing {
-       0% { background-position: 0 0; }
-       50% { background-position: 400% 0; }
-       100% { background-position: 0 0; }
-     }
-
-     .emoji {
-       font-size: 2rem;
-       margin: 0;
-       padding: 0;
-     }
-
-     .location {
-       font-weight: bold;
-       margin: 0;
-       padding: 0;
-       text-align: center;
-       word-break: break-word;
-     }
-
-     .compass {
-       width: 25px;
-       margin: 0 5px;
-     }
-
-     .weather-info {
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       flex-wrap: wrap;
-       gap: 10px;
-       margin-top: 10px;
-       width: 100%;
-       max-width: 500px;
-       padding: 10px;
-     }
-
-     .alert {
-       margin: auto;
-       padding: 10px;
-       background-color: #ff4c4c;
-       color: white;
-       border-radius: 5px;
-       width: 100%;
-       max-width: 500px;
-       text-align: center;
-       margin-bottom: 15px;
-     }
-
-     .result_container {
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       width: 100%;
-       max-width: 800px;
-       margin-bottom: 2rem;
-     }
-
-     #clock {
-       font-size: 1.4rem;
-       width: 160px;
-       margin: 0;
-       text-align: center;
-       border-radius: 20px;
-     }
-
-     .clock_img {
-       height: 2rem;
-       width: 2rem;
-     }
-
-     .clock_div {
-       width: 100%;
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       justify-content: center;
-       margin-bottom: 15px;
-     }
-
-     @media (min-width: 768px) {
-       .clock_div {
-         flex-direction: row;
-         gap: 1rem;
-         justify-content: center;
-       }
-     }
-
-     canvas {
-       max-width: 100%;
-       height: auto;
-     }
-
-     .hide {
-       display: none;
-     }
-
-     #map {
-       width: 100%;
-       height: 300px;
-       margin-top: 15px;
-       border-radius: 5px;
-     }
-
-     .map-inputs {
-       display: flex;
-       flex-wrap: wrap;
-       justify-content: space-between;
-       gap: 10px;
-       margin-top: 15px;
-     }
-
-     .map-inputs label, .map-inputs input {
-       margin: 0;
-     }
-
-     .map-inputs input {
-       width: 110px;
-     }
-
-     .toggle-switch {
-       position: relative;
-       width: 100px;
-       height: 50px;
-       background: #add8e6;
-       border-radius: 25px;
-       cursor: pointer;
-       display: flex;
-       align-items: center;
-       justify-content: space-between;
-       padding: 0 15px;
-       box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-       margin: 10px 0;
-     }
-
-     .toggle-switch.day {
-       background: linear-gradient(#87CEEB, #add8e6);
-     }
-
-     .toggle-switch.night {
-       background: linear-gradient(#2c3e50, #34495e);
-     }
-
-     .switch {
-       position: absolute;
-       left: 5px;
-       width: 40px;
-       height: 40px;
-       background: #f5f5f5;
-       border-radius: 50%;
-       transition: all 0.3s ease;
-       z-index: 1;
-     }
-
-     .toggle-switch.night .switch {
-       left: calc(100% - 45px);
-       background: #ddd;
-     }
-
-     .sun, .moon, .cloud, .stars {
-       font-size: 20px;
-       position: relative;
-       z-index: 2;
-     }
-
-     .moon, .stars {
-       opacity: 0;
-       transition: opacity 0.3s ease;
-     }
-
-     .toggle-switch.night .sun, .toggle-switch.night .cloud {
-       opacity: 0;
-     }
-
-     .toggle-switch.night .moon, .toggle-switch.night .stars {
-       opacity: 1;
-     }
-
-     @media (max-width: 768px) {
-       .toggle-switch {
-         width: 80px;
-         height: 40px;
-       }
-       
-       .switch {
-         width: 30px;
-         height: 30px;
-       }
-       
-       .toggle-switch.night .switch {
-         left: calc(100% - 35px);
-       }
-       
-       .sun, .moon, .cloud, .stars {
-         font-size: 16px;
-       }
-     }
-
-     #user_form {
-       max-width: 400px;
-       width: 100%;
-       margin: auto;
-       padding: 20px;
-       background-color: #f0f0f0;
-       border-radius: 12px;
-       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-     }
-
-     #user_form label {
-       font-weight: bold;
-       font-size: 1.2rem;
-       margin-bottom: 10px;
-       display: block;
-     }
-
-     #user_form input {
-       padding: 12px;
-       width: 100%;
-       border: 2px solid #007bff;
-       border-radius: 8px;
-       font-size: 1rem;
-       margin-bottom: 20px;
-       box-sizing: border-box;
-     }
-
-     #user_form button {
-       width: 100%;
-       max-width: 200px;
-       padding: 12px;
-       background: linear-gradient(45deg, #4caf50, #1e88e5);
-       color: white;
-       font-size: 1.1rem;
-       font-weight: bold;
-       border: none;
-       border-radius: 8px;
-       cursor: pointer;
-       transition: background 0.3s ease-in-out;
-       margin: 0 auto;
-       display: block;
-     }
-
-     /* Weather forecast styles */
-     .forecast-container {
-       width: 100%;
-       max-width: 800px;
-       background-color: rgba(255, 255, 255, 0.9);
-       border-radius: 10px;
-       padding: 20px;
-       margin-top: 20px;
-       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-       display: flex;
-       flex-direction: column;
-     }
-
-     .forecast-header {
-       display: flex;
-       justify-content: space-between;
-       align-items: center;
-       margin-bottom: 15px;
-     }
-
-     .forecast-title {
-       font-size: 1.5rem;
-       font-weight: bold;
-       color: #333;
-     }
-
-     .chart-container {
-       width: 100%;
-       height: 250px;
-       margin-bottom: 20px;
-     }
-
-     .hourly-forecast {
-       display: flex;
-       overflow-x: auto;
-       gap: 10px;
-       padding: 10px 0;
-       scrollbar-width: thin;
-       scrollbar-color: #0099ff #f0f0f0;
-     }
-
-     .hourly-forecast::-webkit-scrollbar {
-       height: 8px;
-     }
-
-     .hourly-forecast::-webkit-scrollbar-track {
-       background: #f0f0f0;
-       border-radius: 4px;
-     }
-
-     .hourly-forecast::-webkit-scrollbar-thumb {
-       background-color: #0099ff;
-       border-radius: 4px;
-     }
-
-     .hour-card {
-       min-width: 80px;
-       background: linear-gradient(145deg, #f0f0f0, #e6e6e6);
-       border-radius: 8px;
-       padding: 10px;
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-       transition: transform 0.2s ease;
-     }
-
-     .hour-card:hover {
-       transform: translateY(-5px);
-     }
-
-     .hour-time {
-       font-weight: bold;
-       margin-bottom: 5px;
-     }
-
-     .hour-icon {
-       font-size: 1.8rem;
-       margin: 5px 0;
-     }
-
-     .hour-temp {
-       font-weight: bold;
-       color: #ff6b6b;
-     }
-
-     .hour-rain {
-       color: #0099ff;
-       font-size: 0.9rem;
-     }
-
-     .hour-details {
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       font-size: 0.8rem;
-       color: #666;
-     }
-
-     .weather-widget {
-       width: 100%;
-       max-width: 450px;
-       margin: 0 auto;
-       background-color: rgba(255, 255, 255, 0.9);
-       border-radius: 15px;
-       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-       padding: 20px;
-       text-align: center;
-       margin-bottom: 30px;
-     }
-
-     .widget-location {
-       font-size: 1.4rem;
-       font-weight: bold;
-       margin-bottom: 10px;
-       color: #333;
-     }
-
-     .widget-main {
-       display: flex;
-       justify-content: space-around;
-       align-items: center;
-       margin: 15px 0;
-     }
-
-     .widget-temp {
-       font-size: 2.5rem;
-       font-weight: bold;
-       color: #ff6b6b;
-     }
-
-     .widget-icon {
-       font-size: 3.5rem;
-     }
-
-     .widget-details {
-       display: flex;
-       justify-content: space-around;
-       border-top: 1px solid #eee;
-       padding-top: 15px;
-     }
-
-     .detail-item {
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-     }
-
-     .detail-label {
-       font-size: 0.8rem;
-       color: #666;
-     }
-
-     .detail-value {
-       font-weight: bold;
-       color: #333;
-     }
-
-     /* Button styles */
-     #user_form button:hover {
-       background: linear-gradient(45deg, #43a047, #1976d2);
-       transform: translateY(-2px);
-       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-     }
-
-     #user_form button:active {
-       transform: translateY(0);
-       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-     }
-
-     /* Toggle button */
-     .toggle-container {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin: 20px auto;
-  width: 100%;
-  max-width: 200px;
-}
-Add this CSS just before the existing media query for the container:
-     .container {
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       gap: 30px;
-       width: 100%;
-       max-width: 1200px;
-       margin-bottom: 20px;
-     }
-
-     @media (min-width: 992px) {
-       .container {
-         flex-direction: row;
-         justify-content: center;
-         align-items: stretch;
-       }
-       
-       .block {
-         height: 100%;
-         display: flex;
-         flex-direction: column;
-       }
-     }
-     /* Responsive adjustments */
-     @media (max-width: 600px) {
-       .block {
-         padding: 15px;
-       }
-
-       .forecast-title {
-         font-size: 1.2rem;
-       }
-
-       .hour-card {
-         min-width: 70px;
-       }
-
-       .widget-temp {
-         font-size: 2rem;
-       }
-
-       .widget-icon {
-         font-size: 2.8rem;
-       }
-     }
-   </style>
-</head>
-<body>
-  <div class="header-container">
-    <div class="first">
-        <h1 class="main_text">WeatherWatch ☔️</h1>
-        <h3 class="inner_text">Will it rain? Find out and get email alerts!</h3>
-    </div>
-    
-    <div class="toggle-container">
-        <div class="toggle-switch day" id="modeToggle">
-            <div class="switch"></div>
-            <div class="sun">☀️</div>
-            <div class="moon">🌙</div>
-            <div class="cloud">☁️</div>
-            <div class="stars">✨</div>
-        </div>
-    </div>
-    <div class="clock_div">
-      <div class="clock_img">⏰</div>
-      <div id="clock">
-
-    </div>
-</div>
-
-  {% if get_flashed_messages() %}
-    {% for message in get_flashed_messages() %}
-      <div class="alert">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-
+{% block content %}
+<section class="hero-section">
   <div class="container">
-    <div class="block">
-      <h3><img class="compass" src="/static/map.png">By Latitude & Longitude<img class="compass" src="/static/location.png"></h3>
-      <form action="/" method="post">
-        <input type="hidden" name="input_type" value="latlong">
-        <label for="latitude">Latitude:</label>
-        <input type="text" id="latitude" name="latitude" placeholder="e.g. 51.5074" required>
-        <label for="longitude">Longitude:</label>
-        <input type="text" id="longitude" name="longitude" placeholder="e.g. -0.1278" required>
-        <label for="recipient_email_latlong">Email for Alerts:</label>
-        <input type="email" id="recipient_email_latlong" name="recipient_email_latlong" placeholder="your@email.com" required>
-        <button type="submit" class="glow-on-hover1" style="--glow-background: linear-gradient(#4CAF50, #2196F3);">Check Weather</button>
-      </form>
-    </div>
-
-    <div class="block">
-      <h3><img src="/static/cityscape.png" class="compass"> City Name <img src="/static/architecture-and-city.png" class="compass"></h3>
-      <form action="/" method="post">
-        <input type="hidden" name="input_type" value="city">
-        <label for="city_name">City Name:</label>
-        <input type="text" id="city_name" name="city_name" placeholder="e.g. London" required>
-        <label for="recipient_email_city">Email for Alerts:</label>
-        <input type="email" id="recipient_email_city" name="recipient_email_city" placeholder="your@email.com" required>
-        <button type="submit" class="glow-on-hover2" style="--glow-background: linear-gradient(#673AB7, #2196F3);">Check Weather</button>
-      </form>
-    </div>
-
-    <div class="block">
-      <h3>Use Interactive Map</h3>
-      <div id="map"></div>
-      <div class="map-inputs">
-        <div>
-          <label for="map_lat">Lat:</label>
-          <input type="text" id="map_lat" readonly>
-        </div>
-        <div>
-          <label for="map_lng">Lng:</label>
-          <input type="text" id="map_lng" readonly>
-        </div>
-      </div>
-      <form id="map_form" action="/" method="post" class="hide">
-        <input type="hidden" name="input_type" value="latlong">
-        <input type="hidden" id="hidden_lat" name="latitude">
-        <input type="hidden" id="hidden_lng" name="longitude">
-        <input type="hidden" id="hidden_email" name="recipient_email_latlong">
-      </form>
-      <label for="map_email">Email for Alerts:</label>
-      <input type="email" id="map_email" placeholder="your@email.com">
-      <button type="button" id="check_map_weather" class="glow-on-hover1" style="--glow-background: linear-gradient(#FF9800, #F44336);">Check Selected Location</button>
+    <h1>WeatherWatch ☔️</h1>
+    <p>Will it rain? Find out and get email alerts instantly!</p>
+    <div class="mt-3">
+      <span class="clock-badge">⏰ <span id="clock"></span></span>
     </div>
   </div>
+</section>
 
-  {% if location and location != "No data yet" %}
-    <div class="result_container">
-      <div class="weather-widget">
-        <h2 class="widget-location">{{ location }}</h2>
-        <div class="widget-main">
-          <div class="widget-temp">
-            <!-- Current temperature will be inserted by JS -->
-          </div>
-          <div class="widget-icon">{{ emoji }}</div>
-        </div>
-        <div class="widget-details">
-          <div class="detail-item">
-            <span class="detail-label">Wind</span>
-            <span class="detail-value" id="widget-wind">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Rain</span>
-            <span class="detail-value" id="widget-rain">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Clouds</span>
-            <span class="detail-value" id="widget-clouds">--</span>
+<section class="py-4">
+  <div class="container">
+
+    <!-- ===== Row 1: Lat/Long + City Name side by side ===== -->
+    <div class="row g-4 justify-content-center mb-4">
+
+      <!-- Card 1: Latitude & Longitude -->
+      <div class="col-lg-5 col-md-6">
+        <div class="card weather-card h-100">
+          <div class="card-header-bar blue"></div>
+          <div class="card-body p-4">
+            <h5 class="card-title text-center mb-3">
+              <img src="/static/images/map.png" class="card-icon" alt="map">
+              By Latitude &amp; Longitude
+              <img src="/static/images/location.png" class="card-icon" alt="location">
+            </h5>
+            <form id="latlongForm" action="/submit" method="post">
+              <input type="hidden" name="input_type" value="latlong">
+              <div class="mb-3">
+                <label for="latitude" class="form-label">Latitude</label>
+                <input type="text" class="form-control" id="latitude" name="latitude"
+                       placeholder="e.g. 51.5074" required>
+              </div>
+              <div class="mb-3">
+                <label for="longitude" class="form-label">Longitude</label>
+                <input type="text" class="form-control" id="longitude" name="longitude"
+                       placeholder="e.g. -0.1278" required>
+              </div>
+              <div class="mb-3">
+                <label for="recipient_email_latlong" class="form-label">Email for Alerts</label>
+                <input type="email" class="form-control" id="recipient_email_latlong"
+                       name="recipient_email_latlong" placeholder="your@email.com" required>
+              </div>
+              <div class="text-center">
+                <button type="submit" class="btn btn-weather-primary px-4 py-2">
+                  🔍 Check Weather
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
 
-      <div class="forecast-container">
-        <div class="forecast-header">
-          <h2 class="forecast-title">24-Hour Forecast</h2>
+      <!-- Card 2: City Name -->
+      <div class="col-lg-5 col-md-6">
+        <div class="card weather-card h-100">
+          <div class="card-header-bar orange"></div>
+          <div class="card-body p-4">
+            <h5 class="card-title text-center mb-3">
+              <img src="/static/images/cityscape.png" class="card-icon" alt="cityscape">
+              By City Name
+              <img src="/static/images/architecture-and-city.png" class="card-icon" alt="city">
+            </h5>
+            <form id="cityForm" action="/submit" method="post">
+              <input type="hidden" name="input_type" value="city">
+              <div class="mb-3">
+                <label for="city_name" class="form-label">City Name</label>
+                <input type="text" class="form-control" id="city_name" name="city_name"
+                       placeholder="e.g. London" required>
+              </div>
+              <div class="mb-3">
+                <label for="recipient_email_city" class="form-label">Email for Alerts</label>
+                <input type="email" class="form-control" id="recipient_email_city"
+                       name="recipient_email_city" placeholder="your@email.com" required>
+              </div>
+              <div class="text-center mt-3">
+                <button type="submit" class="btn btn-weather-warm px-4 py-2">
+                  🏙️ Check Weather
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div class="chart-container">
-          <canvas id="weatherChart"></canvas>
-        </div>
-        <div class="hourly-forecast" id="hourlyForecast">
-          <!-- Hourly forecast cards will be inserted here by JS -->
+      </div>
+
+    </div>
+
+    <!-- ===== Row 2: Interactive Map centered ===== -->
+    <div class="row justify-content-center">
+      <div class="col-lg-7 col-md-9">
+        <div class="card weather-card">
+          <div class="card-header-bar teal"></div>
+          <div class="card-body p-4">
+            <h5 class="card-title text-center mb-3">🗺️ Interactive Map</h5>
+            <div id="map"></div>
+
+            <div class="row g-2 mt-2">
+              <div class="col-md-3 col-4">
+                <label for="map_lat" class="form-label small">Latitude</label>
+                <input type="text" class="form-control form-control-sm" id="map_lat" readonly>
+              </div>
+              <div class="col-md-3 col-4">
+                <label for="map_lng" class="form-label small">Longitude</label>
+                <input type="text" class="form-control form-control-sm" id="map_lng" readonly>
+              </div>
+              <div class="col-md-6 col-4">
+                <label for="map_email" class="form-label small">Email for Alerts</label>
+                <input type="email" class="form-control form-control-sm" id="map_email"
+                       placeholder="your@email.com">
+              </div>
+            </div>
+
+            <!-- Hidden form for map submission -->
+            <form id="map_form" action="/submit" method="post" class="d-none">
+              <input type="hidden" name="input_type" value="latlong">
+              <input type="hidden" id="hidden_lat" name="latitude">
+              <input type="hidden" id="hidden_lng" name="longitude">
+              <input type="hidden" id="hidden_email" name="recipient_email_latlong">
+            </form>
+
+            <div class="text-center mt-3">
+              <button type="button" id="check_map_weather" class="btn btn-weather-teal px-4 py-2">
+                📍 Check Selected Location
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  {% endif %}
 
-  <script>
-    // Initialize the map
-    var map = L.map('map').setView([51.505, -0.09], 3);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Variable to store the marker
-    var marker;
-
-    // Clock functionality
-    function updateClock() {
-      const now = new Date();
-      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      document.getElementById('clock').innerText = timeString;
-    }
-    updateClock();
-    setInterval(updateClock, 1000);
-
-    // Dark mode toggle
-    const modeToggle = document.getElementById('modeToggle');
-    modeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-      modeToggle.classList.toggle('night');
-    });
-
-    // Handle map click event
-    map.on('click', function(e) {
-      // Remove previous marker if exists
-      if (marker) {
-        map.removeLayer(marker);
-      }
-      
-      // Add marker at clicked location
-      marker = L.marker(e.latlng).addTo(map);
-      
-      // Update form inputs with coordinates
-      const lat = e.latlng.lat.toFixed(6);
-      const lng = e.latlng.lng.toFixed(6);
-      document.getElementById('map_lat').value = lat;
-      document.getElementById('map_lng').value = lng;
-      document.getElementById('hidden_lat').value = lat;
-      document.getElementById('hidden_lng').value = lng;
-      
-      // Fetch weather info for the clicked location
-      fetchWeatherInfo(lat, lng);
-    });
-
-    // Handle check map weather button
-    document.getElementById('check_map_weather').addEventListener('click', function() {
-      const email = document.getElementById('map_email').value;
-      if (!email) {
-        alert('Please enter an email address for alerts.');
-        return;
-      }
-      
-      document.getElementById('hidden_email').value = email;
-      document.getElementById('map_form').submit();
-    });
-
-    // Fetch weather info for clicked map location
-    function fetchWeatherInfo(lat, lng) {
-      fetch('/map-weather', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ latitude: lat, longitude: lng }),
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Create popup content
-        const popupContent = `
-          <div style="text-align: center;">
-            <div style="font-size: 2rem;">${data.emoji}</div>
-            <div style="font-weight: bold;">${data.temperature || 'Temperature N/A'}</div>
-            <div>${data.location.split(',')[0]}</div>
-            <div>${data.will_rain ? '🌧️ Rain expected' : '☀️ No rain expected'}</div>
-          </div>
-        `;
-        
-        // Update marker popup
-        marker.bindPopup(popupContent).openPopup();
-      })
-      .catch(error => {
-        console.error('Error fetching weather data:', error);
-      });
-    }
-
-    // Process forecast data if available
-    {% if forecast_data %}
-      const forecastData = {{ forecast_data|safe }};
-      const weatherUnits = {{ weather_units|tojson|safe }};
-      
-      // Render hourly forecast cards
-      const hourlyForecastContainer = document.getElementById('hourlyForecast');
-      if (hourlyForecastContainer) {
-        forecastData.forEach(hour => {
-          const hourCard = document.createElement('div');
-          hourCard.className = 'hour-card';
-          hourCard.innerHTML = `
-            <div class="hour-time">${hour.hour}</div>
-            <div class="hour-icon">${hour.icon}</div>
-            <div class="hour-temp">${hour.temp}${weatherUnits.temperature_2m || '°C'}</div>
-            <div class="hour-rain">${hour.rain}${weatherUnits.rain || 'mm'}</div>
-            <div class="hour-details">
-              <div>☁️ ${hour.clouds}%</div>
-              <div>💨 ${hour.wind}${weatherUnits.windspeed_10m || 'km/h'}</div>
-            </div>
-          `;
-          hourlyForecastContainer.appendChild(hourCard);
-        });
-      }
-      
-      // Update weather widget with current data
-      if (forecastData.length > 0) {
-        const currentHour = new Date().getHours();
-        const currentData = forecastData[currentHour];
-        
-        // Update widget elements
-        document.querySelector('.widget-temp').textContent = 
-          `${currentData.temp}${weatherUnits.temperature_2m || '°C'}`;
-        document.getElementById('widget-wind').textContent = 
-          `${currentData.wind}${weatherUnits.windspeed_10m || 'km/h'}`;
-        document.getElementById('widget-rain').textContent = 
-          `${currentData.rain}${weatherUnits.rain || 'mm'}`;
-        document.getElementById('widget-clouds').textContent = 
-          `${currentData.clouds}%`;
-      }
-      
-      // Create temperature and rain charts
-      const ctx = document.getElementById('weatherChart').getContext('2d');
-      
-      // Prepare data for Chart.js
-      const hours = forecastData.map(item => item.hour);
-      const temps = forecastData.map(item => item.temp);
-      const rain = forecastData.map(item => item.rain);
-      
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: hours,
-          datasets: [
-            {
-              label: `Temperature (${weatherUnits.temperature_2m || '°C'})`,
-              data: temps,
-              borderColor: '#ff6b6b',
-              backgroundColor: 'rgba(255, 107, 107, 0.1)',
-              borderWidth: 2,
-              tension: 0.4,
-              yAxisID: 'y',
-            },
-            {
-              label: `Rain (${weatherUnits.rain || 'mm'})`,
-              data: rain,
-              borderColor: '#0099ff',
-              backgroundColor: 'rgba(0, 153, 255, 0.1)',
-              borderWidth: 2,
-              tension: 0.4,
-              yAxisID: 'y1',
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false,
-          },
-          scales: {
-            x: {
-              grid: {
-                display: false
-              }
-            },
-            y: {
-              type: 'linear',
-              display: true,
-              position: 'left',
-              title: {
-                display: true,
-                text: `Temperature (${weatherUnits.temperature_2m || '°C'})`
-              }
-            },
-            y1: {
-              type: 'linear',
-              display: true,
-              position: 'right',
-              title: {
-                display: true,
-                text: `Rain (${weatherUnits.rain || 'mm'})`
-              },
-              grid: {
-                drawOnChartArea: false,
-              },
-              min: 0
-            }
-          }
-        }
-      });
-    {% endif %}
-    </script>
-</body>
-</html>
+  </div>
+</section>
+{% endblock %}

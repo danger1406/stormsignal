@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}WeatherWatch – Forecast Results{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+  <div class="container">
+    <h1>Weather Results {{ emoji }}</h1>
+    <p>Here's the latest forecast for <strong>{{ location }}</strong></p>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container">
+
+    <!-- ===== Weather Widget ===== -->
+    <div class="row justify-content-center mb-4">
+      <div class="col-lg-6 col-md-8">
+        <div class="weather-widget">
+          <h4 class="fw-bold mb-2">{{ location }}</h4>
+          <div class="d-flex justify-content-around align-items-center my-3">
+            <span class="widget-temp" id="widget-temp-value">--</span>
+            <span class="widget-icon">{{ emoji }}</span>
+          </div>
+          <div class="d-flex justify-content-around border-top pt-3">
+            <div class="text-center">
+              <div class="text-muted small">Wind</div>
+              <div class="fw-bold" id="widget-wind">--</div>
+            </div>
+            <div class="text-center">
+              <div class="text-muted small">Rain</div>
+              <div class="fw-bold" id="widget-rain">--</div>
+            </div>
+            <div class="text-center">
+              <div class="text-muted small">Clouds</div>
+              <div class="fw-bold" id="widget-clouds">--</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Chart + Hourly Forecast ===== -->
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="forecast-container">
+          <h5 class="fw-bold mb-3">📊 24-Hour Forecast</h5>
+          <div class="chart-container mb-4">
+            <canvas id="weatherChart"></canvas>
+          </div>
+          <div class="hourly-forecast" id="hourlyForecast">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Back Button ===== -->
+    <div class="text-center mt-4">
+      <a href="/" class="btn btn-light btn-lg shadow-sm">🔄 Check Another Location</a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function () {
+  // Parse forecast data injected by Flask
+  var forecastData = {{ forecast_data|safe }};
+  var weatherUnits = {{ weather_units|tojson|safe }};
+
+  // ===== Populate hourly cards =====
+  var $hourly = $('#hourlyForecast');
+  $.each(forecastData, function (i, hour) {
+    var card = '<div class="hour-card">' +
+      '<div class="hour-time">' + hour.hour + '</div>' +
+      '<div class="hour-icon">' + hour.icon + '</div>' +
+      '<div class="hour-temp">' + hour.temp + (weatherUnits.temperature_2m || '°C') + '</div>' +
+      '<div class="hour-rain">' + hour.rain + (weatherUnits.rain || 'mm') + '</div>' +
+      '<div class="hour-details">' +
+        '<div>☁️ ' + hour.clouds + '%</div>' +
+        '<div>💨 ' + hour.wind + (weatherUnits.windspeed_10m || 'km/h') + '</div>' +
+      '</div></div>';
+    $hourly.append(card);
+  });
+
+  // ===== Update widget with current hour =====
+  if (forecastData.length > 0) {
+    var currentHour = new Date().getHours();
+    var cur = forecastData[currentHour] || forecastData[0];
+    $('#widget-temp-value').text(cur.temp + (weatherUnits.temperature_2m || '°C'));
+    $('#widget-wind').text(cur.wind + (weatherUnits.windspeed_10m || 'km/h'));
+    $('#widget-rain').text(cur.rain + (weatherUnits.rain || 'mm'));
+    $('#widget-clouds').text(cur.clouds + '%');
+  }
+
+  // ===== Chart.js =====
+  var ctx = document.getElementById('weatherChart').getContext('2d');
+  var hours = forecastData.map(function (h) { return h.hour; });
+  var temps = forecastData.map(function (h) { return h.temp; });
+  var rain  = forecastData.map(function (h) { return h.rain; });
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: hours,
+      datasets: [
+        {
+          label: 'Temperature (' + (weatherUnits.temperature_2m || '°C') + ')',
+          data: temps,
+          borderColor: '#e74c3c',
+          backgroundColor: 'rgba(231,76,60,.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Rain (' + (weatherUnits.rain || 'mm') + ')',
+          data: rain,
+          borderColor: '#3498db',
+          backgroundColor: 'rgba(52,152,219,.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          type: 'linear', position: 'left',
+          title: { display: true, text: 'Temperature (' + (weatherUnits.temperature_2m || '°C') + ')' }
+        },
+        y1: {
+          type: 'linear', position: 'right',
+          title: { display: true, text: 'Rain (' + (weatherUnits.rain || 'mm') + ')' },
+          grid: { drawOnChartArea: false },
+          min: 0
+        }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

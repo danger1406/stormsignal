@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 import requests
 import smtplib
 from datetime import datetime
@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import os
+
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'my-key')
 
@@ -22,6 +23,9 @@ GEO_API_URL = "https://api.api-ninjas.com/v1/geocoding"
 LOC_API_URL = "https://us1.locationiq.com/v1/reverse"
 GEO_API_KEY = os.getenv('GEO_API_KEY')
 LOC_API_KEY = os.getenv('LOC_API_KEY')
+
+
+# ── Helper functions ─────────────────────────────────────────────
 
 def generate_weather_graph(weather_data):
     """Generate a temperature and rain graph for the next 24 hours and return as bytes."""
@@ -55,8 +59,7 @@ def generate_weather_graph(weather_data):
 
 
 def send_email(recipient, location, weather_data):
-    """Send an email alert with detailed weather information and a graph attachment"""
-    # Format the weather summary for email (HTML)
+    """Send an email alert with detailed weather information and a graph attachment."""
     weather_summary = format_weather_summary(weather_data)
     forecast_table = generate_forecast_table(weather_data)
     graph_bytes = generate_weather_graph(weather_data)
@@ -84,7 +87,6 @@ def send_email(recipient, location, weather_data):
     """
     msg.attach(MIMEText(html, 'html'))
 
-    # Attach the graph image
     image = MIMEBase('image', 'png', name='weather_graph.png')
     image.set_payload(graph_bytes)
     encoders.encode_base64(image)
@@ -115,18 +117,18 @@ def generate_forecast_table(weather_data):
     temp_unit = weather_data['hourly_units'].get('temperature_2m', '°C')
     rain_unit = weather_data['hourly_units'].get('rain', 'mm')
     wind_unit = weather_data['hourly_units'].get('windspeed_10m', 'km/h')
-    def get_icon(code):
-        return get_weather_icon(code)
+
     table = "<table border='1' cellpadding='4' cellspacing='0' style='border-collapse:collapse; font-size:12px;'>"
     table += "<tr><th>Hour</th><th>Icon</th><th>Temp</th><th>Rain</th><th>Clouds</th><th>Wind</th></tr>"
     for i in range(24):
-        table += f"<tr><td>{hours[i]}</td><td>{get_icon(weathercodes[i])}</td><td>{temps[i]}{temp_unit}</td><td>{rain[i]}{rain_unit}</td><td>{clouds[i]}%</td><td>{wind[i]}{wind_unit}</td></tr>"
+        icon = get_weather_icon(weathercodes[i])
+        table += f"<tr><td>{hours[i]}</td><td>{icon}</td><td>{temps[i]}{temp_unit}</td><td>{rain[i]}{rain_unit}</td><td>{clouds[i]}%</td><td>{wind[i]}{wind_unit}</td></tr>"
     table += "</table>"
     return table
 
 
 def format_weather_summary(weather_data):
-    """Format weather data into a detailed HTML summary for email"""
+    """Format weather data into a detailed HTML summary for email."""
     if not weather_data or 'hourly' not in weather_data:
         return "<p>Weather data unavailable at this time.</p>"
     condition = "Rainy" if any(r > 0.5 for r in weather_data['hourly']['rain'][:24]) else "Clear"
@@ -157,7 +159,7 @@ def format_weather_summary(weather_data):
 
 
 def get_weather(latitude, longitude):
-    """Get comprehensive weather data from Open Meteo API"""
+    """Get comprehensive weather data from Open Meteo API."""
     params = {
         "latitude": latitude,
         "longitude": longitude,
@@ -168,47 +170,28 @@ def get_weather(latitude, longitude):
     response = requests.get(OPEN_METEO_URL, params=params)
     if response.status_code == 200:
         return response.json()
-    else:
-        return None
+    return None
 
 
 def get_weather_icon(weathercode):
-    """Map Open Meteo weather codes to appropriate emoji icons"""
+    """Map Open Meteo weather codes to appropriate emoji icons."""
     weather_icons = {
-        0: "☀️",  # Clear sky
-        1: "🌤️",  # Mainly clear
-        2: "⛅",  # Partly cloudy
-        3: "☁️",  # Overcast
-        45: "🌫️",  # Fog
-        48: "🌫️",  # Depositing rime fog
-        51: "🌦️",  # Light drizzle
-        53: "🌦️",  # Moderate drizzle
-        55: "🌧️",  # Dense drizzle
-        56: "🌨️",  # Light freezing drizzle
-        57: "🌨️",  # Dense freezing drizzle
-        61: "🌦️",  # Slight rain
-        63: "🌧️",  # Moderate rain
-        65: "🌧️",  # Heavy rain
-        66: "🌨️",  # Light freezing rain
-        67: "🌨️",  # Heavy freezing rain
-        71: "❄️",  # Slight snow fall
-        73: "❄️",  # Moderate snow fall
-        75: "❄️",  # Heavy snow fall
-        77: "❄️",  # Snow grains
-        80: "🌦️",  # Slight rain showers
-        81: "🌧️",  # Moderate rain showers
-        82: "🌧️",  # Violent rain showers
-        85: "🌨️",  # Slight snow showers
-        86: "🌨️",  # Heavy snow showers
-        95: "⛈️",  # Thunderstorm
-        96: "⛈️",  # Thunderstorm with slight hail
-        99: "⛈️",  # Thunderstorm with heavy hail
+        0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+        45: "🌫️", 48: "🌫️",
+        51: "🌦️", 53: "🌦️", 55: "🌧️",
+        56: "🌨️", 57: "🌨️",
+        61: "🌦️", 63: "🌧️", 65: "🌧️",
+        66: "🌨️", 67: "🌨️",
+        71: "❄️", 73: "❄️", 75: "❄️", 77: "❄️",
+        80: "🌦️", 81: "🌧️", 82: "🌧️",
+        85: "🌨️", 86: "🌨️",
+        95: "⛈️", 96: "⛈️", 99: "⛈️",
     }
     return weather_icons.get(weathercode, "🌡️")
 
 
 def get_location(city_name):
-    """Get latitude and longitude data for a city name"""
+    """Get latitude and longitude data for a city name."""
     headers = {"X-Api-Key": GEO_API_KEY}
     response = requests.get(f"{GEO_API_URL}?city={city_name}", headers=headers)
     if response.status_code == 200 and response.json():
@@ -217,7 +200,7 @@ def get_location(city_name):
 
 
 def get_name(lati, longi):
-    """Get location name from latitude and longitude"""
+    """Get location name from latitude and longitude."""
     params = {
         "lat": lati,
         "lon": longi,
@@ -226,52 +209,34 @@ def get_name(lati, longi):
     }
     try:
         response = requests.get(LOC_API_URL, params=params)
-
         if response.status_code != 200:
-            print(f"API request failed with status code {response.status_code}: {response.text}")
             return "Unknown Location"
-
         data = response.json()
-
-        # Check if 'display_name' is available
         if 'display_name' not in data:
-            print("The response did not contain 'display_name'.")
             return "Unknown Location"
-
-        # Return the 'display_name'
         return data['display_name']
-
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
+    except requests.exceptions.RequestException:
         return "Unknown Location"
-
-    except ValueError as e:
-        print(f"Error in JSON decoding: {e}")
+    except ValueError:
         return "Unknown Location"
 
 
 def prepare_hourly_forecast(weather_data):
-    """Prepare hourly forecast data for display"""
+    """Prepare hourly forecast data for display."""
     if not weather_data or 'hourly' not in weather_data:
         return []
-    
-    # Get hourly timestamps and convert to readable time
     timestamps = weather_data['hourly']['time'][:24]
     temps = weather_data['hourly'].get('temperature_2m', [0] * 24)[:24]
     rain = weather_data['hourly'].get('rain', [0] * 24)[:24]
     weathercodes = weather_data['hourly'].get('weathercode', [0] * 24)[:24]
     cloudcover = weather_data['hourly'].get('cloudcover', [0] * 24)[:24]
     windspeed = weather_data['hourly'].get('windspeed_10m', [0] * 24)[:24]
-    
+
     forecast = []
     for i in range(24):
-        # Extract hour from ISO timestamp
         dt = datetime.fromisoformat(timestamps[i].replace('Z', '+00:00'))
         hour = dt.strftime("%H:%M")
-        
-        # Get weather icon
         icon = get_weather_icon(weathercodes[i]) if i < len(weathercodes) else "🌡️"
-        
         forecast.append({
             'hour': hour,
             'temp': temps[i] if i < len(temps) else 0,
@@ -280,95 +245,116 @@ def prepare_hourly_forecast(weather_data):
             'clouds': cloudcover[i] if i < len(cloudcover) else 0,
             'wind': windspeed[i] if i < len(windspeed) else 0
         })
-    
     return forecast
 
 
-#renders the front end form and handles the user input
-@app.route("/", methods=["GET", "POST"])
+# ── Routes ────────────────────────────────────────────────────────
+
+@app.route("/")
 def index():
-    emoji, location = "☀️", "No data yet"
-    forecast_data = []
+    """Home Page – renders the input forms."""
+    return render_template("index.html")
 
-    if request.method == "POST":
-        input_type = request.form["input_type"]
-        recipient = None
-        latitude, longitude = None, None
-        location = None
 
-        if input_type == "latlong":
-            latitude = request.form["latitude"]
-            longitude = request.form["longitude"]
-            recipient = request.form["recipient_email_latlong"]
-            location = get_name(latitude, longitude)
+@app.route("/submit", methods=["POST"])
+def submit():
+    """Form handling – fetches weather, sends email if rain, redirects to /success."""
+    input_type = request.form["input_type"]
+    recipient = None
+    latitude, longitude = None, None
+    location = None
 
-        elif input_type == "city":
-            city_name = request.form["city_name"]
-            recipient = request.form["recipient_email_city"]
-            location_data = get_location(city_name)
-            if location_data:
-                latitude, longitude = location_data["latitude"], location_data["longitude"]
-                location = location_data["name"]
-            else:
-                flash(f"Could not find location data for {city_name}.")
-                return render_template("index.html", emoji=False, location="No data yet")
+    if input_type == "latlong":
+        latitude = request.form["latitude"]
+        longitude = request.form["longitude"]
+        recipient = request.form["recipient_email_latlong"]
+        location = get_name(latitude, longitude)
 
-        # Get comprehensive weather data
-        weather_data = get_weather(latitude, longitude)
-        
-        if weather_data:
-            # Check for rain
-            is_rainy = any(r > 0.5 for r in weather_data['hourly']['rain'][:24])
-            
-            # Get weather code for the current hour
-            current_hour = datetime.now().hour
-            if 'weathercode' in weather_data['hourly'] and len(weather_data['hourly']['weathercode']) > current_hour:
-                current_weather_code = weather_data['hourly']['weathercode'][current_hour]
-                emoji = get_weather_icon(current_weather_code)
-            else:
-                emoji = "🌧️" if is_rainy else "☀️"
-            
-            # Prepare hourly forecast data
-            forecast_data = prepare_hourly_forecast(weather_data)
-            
-            # Send email if rain is expected
-            if is_rainy:
-                flash(f"Rain expected in {location}! Sending detailed weather email...")
-                send_email(recipient, location, weather_data)
-            else:
-                flash(f"No significant rain expected today in {location}.")
-            
-            # Pass forecast_data to the template
-            return render_template(
-                "index.html", 
-                emoji=emoji, 
-                location=location, 
-                forecast_data=json.dumps(forecast_data),
-                weather_units=weather_data.get('hourly_units', {})
-            )
+    elif input_type == "city":
+        city_name = request.form["city_name"]
+        recipient = request.form["recipient_email_city"]
+        location_data = get_location(city_name)
+        if location_data:
+            latitude = location_data["latitude"]
+            longitude = location_data["longitude"]
+            location = location_data["name"]
         else:
-            flash("Error fetching weather data. Please try again.")
-    
-    return render_template("index.html", emoji=False, location=location)
+            flash(f"Could not find location data for {city_name}.")
+            return redirect(url_for("index"))
+
+    # Get comprehensive weather data
+    weather_data = get_weather(latitude, longitude)
+
+    if weather_data:
+        is_rainy = any(r > 0.5 for r in weather_data['hourly']['rain'][:24])
+
+        # Get current weather icon
+        current_hour = datetime.now().hour
+        if 'weathercode' in weather_data['hourly'] and len(weather_data['hourly']['weathercode']) > current_hour:
+            current_weather_code = weather_data['hourly']['weathercode'][current_hour]
+            emoji = get_weather_icon(current_weather_code)
+        else:
+            emoji = "🌧️" if is_rainy else "☀️"
+
+        # Prepare hourly forecast
+        forecast_data = prepare_hourly_forecast(weather_data)
+
+        # Send email if rain is expected
+        if is_rainy:
+            flash(f"🌧️ Rain expected in {location}! Detailed weather email sent to {recipient}.")
+            try:
+                send_email(recipient, location, weather_data)
+            except Exception as e:
+                flash(f"Email could not be sent: {e}")
+        else:
+            flash(f"☀️ No significant rain expected today in {location}.")
+
+        # Store results in session for the success page
+        session['weather_result'] = {
+            'emoji': emoji,
+            'location': location,
+            'forecast_data': forecast_data,
+            'weather_units': weather_data.get('hourly_units', {})
+        }
+        return redirect(url_for("success"))
+    else:
+        flash("Error fetching weather data. Please try again.")
+        return redirect(url_for("index"))
+
+
+@app.route("/success")
+def success():
+    """Display results / confirmation page."""
+    result = session.pop('weather_result', None)
+    if not result:
+        flash("No weather data available. Please submit a query first.")
+        return redirect(url_for("index"))
+
+    return render_template(
+        "success.html",
+        emoji=result['emoji'],
+        location=result['location'],
+        forecast_data=json.dumps(result['forecast_data']),
+        weather_units=result['weather_units']
+    )
 
 
 @app.route("/map-weather", methods=["POST"])
 def map_weather():
-    """API endpoint for fetching weather data for map locations"""
+    """API endpoint for fetching weather data for map locations."""
     data = request.json
     latitude = data.get('latitude')
     longitude = data.get('longitude')
-    
+
     if not latitude or not longitude:
         return jsonify({"error": "Missing coordinates"}), 400
-    
+
     weather_data = get_weather(latitude, longitude)
     location = get_name(latitude, longitude)
-    
+
     if not weather_data:
         return jsonify({"error": "Could not fetch weather data"}), 500
-    
-    # Prepare simplified response
+
     current_hour = datetime.now().hour
     if 'weathercode' in weather_data['hourly'] and len(weather_data['hourly']['weathercode']) > current_hour:
         current_weather_code = weather_data['hourly']['weathercode'][current_hour]
@@ -376,12 +362,11 @@ def map_weather():
     else:
         is_rainy = any(r > 0.5 for r in weather_data['hourly']['rain'][:24])
         emoji = "🌧️" if is_rainy else "☀️"
-    
-    # Get current temperature if available
+
     current_temp = None
     if 'temperature_2m' in weather_data['hourly'] and len(weather_data['hourly']['temperature_2m']) > current_hour:
         current_temp = f"{weather_data['hourly']['temperature_2m'][current_hour]}{weather_data['hourly_units'].get('temperature_2m', '°C')}"
-    
+
     return jsonify({
         "location": location,
         "emoji": emoji,
